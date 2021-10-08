@@ -30,8 +30,15 @@ public struct SampleBody<BindingType: Codable>: Codable {
 }
 
 public struct Variable: Codable {
+    enum CodingKeys: String, CodingKey {
+        case language = "xml:lang"
+        case type
+        case value
+    }
+
     let type: String
     let value: String
+    let language: String?
 }
 
 public protocol Query {
@@ -44,6 +51,8 @@ public struct DemoQuery: Query {
     public struct BindingType: Codable {
         let foo: Variable
         let bar: Variable
+        let fooLabel: Variable?
+        let barLabel: Variable?
     }
 
     public let text: String
