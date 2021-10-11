@@ -8,10 +8,25 @@ public struct DemoQuery: Query {
         static let antiparticleRelationship = Relationship(name: "antiparticleOf")
 
         public var triples: [Triple] {
-            return [
-                try! Triple(NodeType.Entity(foo.value), BindingType.antiparticleRelationship, NodeType.Entity(bar.value), type: .train),
-                try! Triple(NodeType.Entity(bar.value), BindingType.antiparticleRelationship, NodeType.Entity(foo.value), type: .test)
+            var triples = [
+                try! Triple(NodeType.Entity(foo.value), BindingType.antiparticleRelationship, NodeType.Entity(bar.value), type: .source),
+                try! Triple(NodeType.Entity(bar.value), BindingType.antiparticleRelationship, NodeType.Entity(foo.value), type: .target)
             ]
+
+            if let fooLabelUnwrapped = fooLabel {
+                triples.append(
+                    try! Triple(NodeType.Entity(foo.value), BindingType.antiparticleRelationship, NodeType.Literal(fooLabelUnwrapped.value), type: .any)
+                )
+            }
+
+
+            if let barLabelUnwrapped = barLabel {
+                triples.append(
+                    try! Triple(NodeType.Entity(bar.value), labelRelationship, NodeType.Literal(barLabelUnwrapped.value), type: .any)
+                )
+            }
+
+            return triples
         }
     }
 

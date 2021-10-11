@@ -38,6 +38,8 @@ final class wickedDataTests: XCTestCase {
             for triple in sampleWithLabels.triples {
                 print(triple)
             }
+
+            print(sampleWithLabels.compressed)
         }
     }
 }

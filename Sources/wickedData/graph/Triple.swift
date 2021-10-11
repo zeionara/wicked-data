@@ -18,9 +18,8 @@ public enum NodeType: CustomStringConvertible {
 
 public enum TripleType {
     case any
-    case train
-    case test
-    case validation
+    case source
+    case target
 }
 
 public struct Relationship {
