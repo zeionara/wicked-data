@@ -34,6 +34,10 @@ final class wickedDataTests: XCTestCase {
             _ = sampleWithLabels.results.bindings.map{ binding in
                 print("\(binding.fooLabel?.value ?? " - ") is the antiparticle of \(binding.barLabel?.value ?? " - ")")
             }
+
+            for triple in sampleWithLabels.triples {
+                print(triple)
+            }
         }
     }
 }
