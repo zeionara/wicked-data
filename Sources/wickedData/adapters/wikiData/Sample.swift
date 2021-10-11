@@ -1,3 +1,5 @@
+import Foundation
+
 public protocol Binding: Codable {
     var triples: [Triple] { get }
 }
@@ -82,6 +84,66 @@ public extension Sample {
         }
 
         return CompressedTriples(triples: compressedTriplesArray, id2entity: id2entity, id2relationship: id2relationship)
+    }
+}
+
+public typealias CVSubset = (train: [Triple], test: [Triple], validation: [Triple], id2entity: [String: String], id2relationship: [String: String])
+public extension Sample {
+    func cv(trainTargetFraction: Float = 0.5, testTargetFraction: Float = 0.3, nFolds: Int = 2, _ handleSubset: (CVSubset) -> Void) {
+        assert(trainTargetFraction + testTargetFraction <= 1.0)
+        var seenStringifiedTriples = [String: Triple]()
+        var triplesWithoutDuplicates = [Triple]()
+
+        let compressed = self.compressed
+
+        for triple in compressed.triples {
+            if let seenTriple = seenStringifiedTriples["\(triple)"] {
+                continue
+            } else {
+                seenStringifiedTriples["\(triple)"] = triple
+                triplesWithoutDuplicates.append(triple)
+            }
+        }
+
+        let sourceTriples = triplesWithoutDuplicates.filter{$0.type == .source}
+        let targetTriples = triplesWithoutDuplicates.filter{$0.type == .target}
+        
+        // print(sourceTriples.count)
+        // print(targetTriples.count)
+
+        let nTrainTargetTriples = Int(ceil(trainTargetFraction * Float(targetTriples.count)))
+        let nTestTargetTriples = Int(ceil(testTargetFraction * Float(targetTriples.count)))
+        let nValidationTargetTriples = targetTriples.count - nTestTargetTriples - nTrainTargetTriples
+
+        assert(nTestTargetTriples >= nFolds)
+        let nTestTargetTriplesPerFold = Int(floor(Float(nTestTargetTriples) / Float(nFolds)))
+        let remainder = nTestTargetTriples - nTestTargetTriplesPerFold * nFolds
+        var appendices = [Int]()
+
+        for i in 0..<nFolds {
+            appendices.append(i < remainder ? 1 : 0)
+        }
+
+        let shuffledSources = sourceTriples.shuffled()
+        let shuffledTargets = targetTriples.shuffled()
+        var currentTestTargetIndex = 0
+
+        let trainSubset = shuffledSources + Array(shuffledTargets[nTestTargetTriples..<nTestTargetTriples + nTrainTargetTriples])
+        let validationSubset = Array(shuffledTargets[nTestTargetTriples + nTrainTargetTriples..<nTestTargetTriples + nTrainTargetTriples + nValidationTargetTriples])
+        for i in 0..<nFolds {
+             let nextTestTargetIndex = currentTestTargetIndex + nTestTargetTriplesPerFold + appendices[i]
+             let subset = CVSubset(
+                 train: trainSubset,
+                 validation: validationSubset,
+                 test: Array(shuffledTargets[currentTestTargetIndex..<nextTestTargetIndex]),
+                 id2entity: compressed.id2entity,
+                 id2relationship: compressed.id2relationship
+             )
+             handleSubset(subset)
+             currentTestTargetIndex = nextTestTargetIndex
+        }
+
+        // print(nTrainTargetTriples, nTestTargetTriples, nValidationTargetTriples, nTestTargetTriplesPerFold)
     }
 }
 

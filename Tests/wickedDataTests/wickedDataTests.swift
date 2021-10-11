@@ -40,6 +40,10 @@ final class wickedDataTests: XCTestCase {
             }
 
             print(sampleWithLabels.compressed)
+
+            sampleWithLabels.cv{ subset in
+                print(subset)
+            }
         }
     }
 }
