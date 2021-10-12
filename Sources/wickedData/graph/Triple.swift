@@ -14,6 +14,15 @@ public enum NodeType: CustomStringConvertible {
             return "(\(value))"
         }
     }
+
+    public var value: String {
+        switch self {
+        case .Literal(let value):
+            return value
+        case .Entity(let value):
+            return value
+        }
+    }
 }
 
 public enum TripleType {
