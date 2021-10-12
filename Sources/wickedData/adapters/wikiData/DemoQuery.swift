@@ -1,4 +1,8 @@
 public struct DemoQuery: Query {
+    public init(text: String) {
+        self.text = text
+    }
+
     public struct BindingType: Binding {
         let foo: Variable
         let bar: Variable
