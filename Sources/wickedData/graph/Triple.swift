@@ -27,10 +27,10 @@ public struct Relationship {
 }
 
 public struct Triple: CustomStringConvertible{
-    let head: NodeType
-    let relationship: Relationship
-    let tail: NodeType 
-    let type: TripleType
+    public let head: NodeType
+    public let relationship: Relationship
+    public let tail: NodeType 
+    public let type: TripleType
 
     public init(_ head: NodeType, _ relationship: Relationship, _ tail: NodeType, type: TripleType = .any) throws {
         if case .Literal(let value) = head {
