@@ -1,10 +1,14 @@
 import XCTest
 import PcgRandom
+import Logging
 @testable import wickedData
 
 final class wickedDataTests: XCTestCase {
     func testExample() throws {
-        let adapter = WikiDataAdapter(address: "query.wikidata.org", port: 80)
+        var logger = Logger(label: "test")
+        logger.logLevel = .info
+
+        let adapter = WikiDataAdapter()
         XCTAssertEqual(adapter.url, "http://query.wikidata.org:80")
         let query = """
         SELECT DISTINCT ?foo ?bar WHERE 
@@ -33,31 +37,17 @@ final class wickedDataTests: XCTestCase {
             XCTAssertEqual(sampleWithLabels.results.bindings.count, 7)
 
             _ = sampleWithLabels.results.bindings.map{ binding in
-                print("\(binding.fooLabel?.value ?? " - ") is the antiparticle of \(binding.barLabel?.value ?? " - ")")
+                logger.info("\(binding.fooLabel?.value ?? " - ") is the antiparticle of \(binding.barLabel?.value ?? " - ")")
             }
 
             for triple in sampleWithLabels.triples {
-                print(triple)
+                logger.trace("\(triple)")
             }
 
-            print(sampleWithLabels.compressed)
-
-            // let seed = 18
-            // var generator = Pcg64Random(seed: UInt64(seed))
-            // sampleWithLabels.cv{ subset in
-            //     print(subset)
-            // } shuffle: { triples in
-            //     let orderingSequence = Double.random(in: 0..<1, using: &generator, n: triples.count)
-            //     return triples.enumerated().sorted{ (lhs, rhs) in
-            //         orderingSequence[rhs.offset] > orderingSequence[lhs.offset]
-            //     }.map{
-            //         $0.element
-            //     } 
-            //     // return triples.shuffled()
-            // }
+            logger.trace("\(sampleWithLabels.compressed)")
 
             sampleWithLabels.cv(seed: 17) { subset in
-                print(subset)
+                logger.trace("\(subset)")
             }
         }
     }

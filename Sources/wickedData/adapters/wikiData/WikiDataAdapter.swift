@@ -5,6 +5,11 @@ public struct WikiDataAdapter: GraphServiceAdapter {
     public let address: String
     public let port: Int
 
+    public init(address: String = "query.wikidata.org", port: Int = 80) {
+        self.address = address
+        self.port = port
+    }
+
     public func sample<QueryType: Query>(_ query: QueryType) async throws -> Sample<QueryType.BindingType> {
         let stringifiedUrl = "\(url)/sparql?query=\(query.text.addingPercentEncoding(withAllowedCharacters: .alphanumerics)!)"
         guard let url = URL(string: stringifiedUrl) else {
