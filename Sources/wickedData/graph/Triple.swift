@@ -32,7 +32,7 @@ public enum TripleType {
 }
 
 public struct Relationship {
-    let name: String
+    public let name: String
 }
 
 public struct Triple: CustomStringConvertible{
