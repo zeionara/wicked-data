@@ -1,4 +1,5 @@
 import Foundation
+import PcgRandom
 
 public protocol Binding: Codable {
     var triples: [Triple] { get }
@@ -70,17 +71,6 @@ public extension Sample {
                    try! Triple(NodeType.Entity(headEntityIdUnwrapped), Relationship(name: relationshipId), NodeType.Entity(tailEntityIdUnwrapped), type: triple.type)
                )
            }
-           // if case .Entity(let value) = triple.head {
-           //     if let existingEntityId = entity2id[value] {
-           //         entityId = existingEntityId
-           //     } else {
-           //         currentEntityId += 1
-           //         entity2id[value] = entityId
-           //         id2entity[entityId] = value
-           //     }
-           // } else {
-           //     continue
-           // }
         }
 
         return CompressedTriples(triples: compressedTriplesArray, id2entity: id2entity, id2relationship: id2relationship)
@@ -89,7 +79,7 @@ public extension Sample {
 
 public typealias CVSubset = (train: [Triple], test: [Triple], validation: [Triple], id2entity: [String: String], id2relationship: [String: String])
 public extension Sample {
-    func cv(trainTargetFraction: Float = 0.5, testTargetFraction: Float = 0.3, nFolds: Int = 2, _ handleSubset: (CVSubset) -> Void) {
+    func cv(trainTargetFraction: Float = 0.5, testTargetFraction: Float = 0.3, nFolds: Int = 2, _ handleSubset: (CVSubset) -> Void, shuffle: ([Triple]) -> [Triple]) {
         assert(trainTargetFraction + testTargetFraction <= 1.0)
         var seenStringifiedTriples = [String: Triple]()
         var triplesWithoutDuplicates = [Triple]()
@@ -124,8 +114,8 @@ public extension Sample {
             appendices.append(i < remainder ? 1 : 0)
         }
 
-        let shuffledSources = sourceTriples.shuffled()
-        let shuffledTargets = targetTriples.shuffled()
+        let shuffledSources = shuffle(sourceTriples)
+        let shuffledTargets = shuffle(targetTriples)
         var currentTestTargetIndex = 0
 
         let trainSubset = shuffledSources + Array(shuffledTargets[nTestTargetTriples..<nTestTargetTriples + nTrainTargetTriples])
@@ -145,6 +135,25 @@ public extension Sample {
 
         // print(nTrainTargetTriples, nTestTargetTriples, nValidationTargetTriples, nTestTargetTriplesPerFold)
     }
+    
+    func cv(trainTargetFraction: Float = 0.5, testTargetFraction: Float = 0.3, nFolds: Int = 2, _ handleSubset: (CVSubset) -> Void) {
+        return cv(trainTargetFraction: trainTargetFraction, testTargetFraction: testTargetFraction, nFolds: nFolds, handleSubset) { triples in
+            triples.shuffled()
+        }
+    }
+
+    func cv(trainTargetFraction: Float = 0.5, testTargetFraction: Float = 0.3, nFolds: Int = 2, seed: Int, handleSubset: (CVSubset) -> Void) {
+        var generator = Pcg64Random(seed: UInt64(seed))
+        return cv(trainTargetFraction: trainTargetFraction, testTargetFraction: testTargetFraction, nFolds: nFolds, handleSubset) { triples in
+            let orderingSequence = Double.random(in: 0..<1, using: &generator, n: triples.count)
+            return triples.enumerated().sorted{ (lhs, rhs) in
+                orderingSequence[rhs.offset] > orderingSequence[lhs.offset]
+            }.map{
+                $0.element
+            } 
+        }
+    }
+
 }
 
 public struct SampleHead: Codable {

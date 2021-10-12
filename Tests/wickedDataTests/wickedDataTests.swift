@@ -1,4 +1,5 @@
 import XCTest
+import PcgRandom
 @testable import wickedData
 
 final class wickedDataTests: XCTestCase {
@@ -41,7 +42,21 @@ final class wickedDataTests: XCTestCase {
 
             print(sampleWithLabels.compressed)
 
-            sampleWithLabels.cv{ subset in
+            // let seed = 18
+            // var generator = Pcg64Random(seed: UInt64(seed))
+            // sampleWithLabels.cv{ subset in
+            //     print(subset)
+            // } shuffle: { triples in
+            //     let orderingSequence = Double.random(in: 0..<1, using: &generator, n: triples.count)
+            //     return triples.enumerated().sorted{ (lhs, rhs) in
+            //         orderingSequence[rhs.offset] > orderingSequence[lhs.offset]
+            //     }.map{
+            //         $0.element
+            //     } 
+            //     // return triples.shuffled()
+            // }
+
+            sampleWithLabels.cv(seed: 17) { subset in
                 print(subset)
             }
         }

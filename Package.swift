@@ -12,6 +12,8 @@ let package = Package(
             targets: ["wickedData"]),
     ],
     dependencies: [
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
+        .package(url: "https://github.com/paiv/swift-pcg-random.git", .upToNextMajor(from: "1.0.0"))
         // Dependencies declare other packages that this package depends on.
         // .package(url: /* package url */, from: "1.0.0"),
     ],
@@ -20,7 +22,10 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
             name: "wickedData",
-            dependencies: []),
+            dependencies: [
+                .product(name: "PcgRandom", package: "swift-pcg-random"),
+                .product(name: "Logging", package: "swift-log")
+            ]),
         .testTarget(
             name: "wickedDataTests",
             dependencies: ["wickedData"]),
