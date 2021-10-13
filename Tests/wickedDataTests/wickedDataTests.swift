@@ -46,7 +46,7 @@ final class wickedDataTests: XCTestCase {
 
             logger.trace("\(sampleWithLabels.compressed)")
 
-            sampleWithLabels.cv(seed: 17) { subset in
+            sampleWithLabels.cv(nFolds: 3, seed: 17) { subset in
                 logger.trace("\(subset)")
             }
         }
