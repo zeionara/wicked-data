@@ -124,7 +124,7 @@ public extension Sample {
              let nextTestTargetIndex = currentTestTargetIndex + nTestTargetTriplesPerFold + appendices[i]
              // print("0, \(currentTestTargetIndex), \(nextTestTargetIndex), \(shuffledTargets.count)")
              let subset = CVSubset(
-                 train: Array(shuffledTargets[0..<currentTestTargetIndex]) + Array(shuffledTargets[nextTestTargetIndex..<nCvTargetTriples]),
+                 train: shuffledSources + Array(shuffledTargets[0..<currentTestTargetIndex]) + Array(shuffledTargets[nextTestTargetIndex..<nCvTargetTriples]),
                  test: Array(shuffledTargets[currentTestTargetIndex..<nextTestTargetIndex]),
                  validation: validationSubset,
                  id2entity: compressed.id2entity,
