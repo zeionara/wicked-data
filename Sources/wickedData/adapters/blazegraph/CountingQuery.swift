@@ -23,7 +23,7 @@ public struct CountingQuery: Query {
 
 public extension Sample where BindingType == CountingQuery.BindingType {
     var count: Int {
-        self.results.bindings.first!.count.value.asInt
+        self.results.bindings.count > 0 ? self.results.bindings.first!.count.value.asInt : 0
     }
 }
 

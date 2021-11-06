@@ -63,5 +63,9 @@ final class wickedDataTests: XCTestCase {
         //         logger.trace("\(subset)")
         //     }
         // }
+        // sampleWithLabels.cv(seed: 17) { subset in
+        //         logger.info("\(subset)")
+        //     }
+        // }
     }
 }

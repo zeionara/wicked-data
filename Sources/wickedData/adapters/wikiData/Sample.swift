@@ -79,8 +79,10 @@ public extension Sample {
 
 public typealias CVSubset = (train: [Triple], test: [Triple], validation: [Triple], id2entity: [String: String], id2relationship: [String: String])
 public extension Sample {
-    func cv(trainTargetFraction: Float = 0.5, testTargetFraction: Float = 0.3, nFolds: Int = 2, _ handleSubset: (CVSubset) -> Void, shuffle: ([Triple]) -> [Triple]) {
-        assert(trainTargetFraction + testTargetFraction <= 1.0)
+    func cv(validationTargetFraction: Float = 0.2, nFolds: Int = 2, _ handleSubset: (CVSubset) -> Void, shuffle: ([Triple]) -> [Triple]) {
+        assert(validationTargetFraction <= 1.0)
+        assert(nFolds > 0)
+
         var seenStringifiedTriples = [String: Triple]()
         var triplesWithoutDuplicates = [Triple]()
 
@@ -98,16 +100,14 @@ public extension Sample {
         let sourceTriples = triplesWithoutDuplicates.filter{$0.type == .source}
         let targetTriples = triplesWithoutDuplicates.filter{$0.type == .target}
         
-        // print(sourceTriples.count)
-        // print(targetTriples.count)
+        let nValidationTargetTriples = Int(ceil(validationTargetFraction * Float(targetTriples.count)))
+        let nCvTargetTriples = targetTriples.count - nValidationTargetTriples
+        //  let nTrainTargetTriples = Int(Float(nFolds - 1) / Float(nFolds) * Float(targetTriples.count - nValidationTargetTriples)
+        //  let nTestTargetTriples = Int(ceil(testTargetFraction * Float(targetTriples.count)))
 
-        let nTrainTargetTriples = Int(ceil(trainTargetFraction * Float(targetTriples.count)))
-        let nTestTargetTriples = Int(ceil(testTargetFraction * Float(targetTriples.count)))
-        let nValidationTargetTriples = targetTriples.count - nTestTargetTriples - nTrainTargetTriples
-
-        assert(nTestTargetTriples >= nFolds)
-        let nTestTargetTriplesPerFold = Int(floor(Float(nTestTargetTriples) / Float(nFolds)))
-        let remainder = nTestTargetTriples - nTestTargetTriplesPerFold * nFolds
+        assert(nCvTargetTriples >= nFolds)
+        let nTestTargetTriplesPerFold = Int(floor(Float(nCvTargetTriples) / Float(nFolds)))
+        let remainder = nCvTargetTriples - nTestTargetTriplesPerFold * nFolds
         var appendices = [Int]()
 
         for i in 0..<nFolds {
@@ -118,14 +118,15 @@ public extension Sample {
         let shuffledTargets = shuffle(targetTriples)
         var currentTestTargetIndex = 0
 
-        let trainSubset = shuffledSources + Array(shuffledTargets[nTestTargetTriples..<nTestTargetTriples + nTrainTargetTriples])
-        let validationSubset = Array(shuffledTargets[nTestTargetTriples + nTrainTargetTriples..<nTestTargetTriples + nTrainTargetTriples + nValidationTargetTriples])
+        // let trainSubset = shuffledSources + Array(shuffledTargets[nTestTargetTriples..<nTestTargetTriples + nTrainTargetTriples])
+        let validationSubset = Array(shuffledTargets[nCvTargetTriples..<shuffledTargets.count])
         for i in 0..<nFolds {
              let nextTestTargetIndex = currentTestTargetIndex + nTestTargetTriplesPerFold + appendices[i]
+             // print("0, \(currentTestTargetIndex), \(nextTestTargetIndex), \(shuffledTargets.count)")
              let subset = CVSubset(
-                 train: trainSubset,
-                 validation: validationSubset,
+                 train: shuffledSources + Array(shuffledTargets[0..<currentTestTargetIndex]) + Array(shuffledTargets[nextTestTargetIndex..<nCvTargetTriples]),
                  test: Array(shuffledTargets[currentTestTargetIndex..<nextTestTargetIndex]),
+                 validation: validationSubset,
                  id2entity: compressed.id2entity,
                  id2relationship: compressed.id2relationship
              )
@@ -136,15 +137,15 @@ public extension Sample {
         // print(nTrainTargetTriples, nTestTargetTriples, nValidationTargetTriples, nTestTargetTriplesPerFold)
     }
     
-    func cv(trainTargetFraction: Float = 0.5, testTargetFraction: Float = 0.3, nFolds: Int = 2, _ handleSubset: (CVSubset) -> Void) {
-        return cv(trainTargetFraction: trainTargetFraction, testTargetFraction: testTargetFraction, nFolds: nFolds, handleSubset) { triples in
+    func cv(validationTargetFraction: Float = 0.2, nFolds: Int = 2, _ handleSubset: (CVSubset) -> Void) {
+        return cv(validationTargetFraction: validationTargetFraction, nFolds: nFolds, handleSubset) { triples in
             triples.shuffled()
         }
     }
 
-    func cv(trainTargetFraction: Float = 0.5, testTargetFraction: Float = 0.3, nFolds: Int = 2, seed: Int, handleSubset: (CVSubset) -> Void) {
+    func cv(validationTargetFraction: Float = 0.2, nFolds: Int = 2, seed: Int, handleSubset: (CVSubset) -> Void) {
         var generator = Pcg64Random(seed: UInt64(seed))
-        return cv(trainTargetFraction: trainTargetFraction, testTargetFraction: testTargetFraction, nFolds: nFolds, handleSubset) { triples in
+        return cv(validationTargetFraction: validationTargetFraction, nFolds: nFolds, handleSubset) { triples in
             let orderingSequence = Double.random(in: 0..<1, using: &generator, n: triples.count)
             return triples.enumerated().sorted{ (lhs, rhs) in
                 orderingSequence[rhs.offset] > orderingSequence[lhs.offset]
