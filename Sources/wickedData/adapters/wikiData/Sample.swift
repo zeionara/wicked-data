@@ -169,10 +169,12 @@ public struct Variable: Codable {
         case language = "xml:lang"
         case type
         case value
+        case datatype
     }
 
     let type: String
     let value: String
     let language: String?
+    let datatype: String?
 }
 
