@@ -45,4 +45,40 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
 
         return decoded!
     }
+
+    public func update(_ query: UpdateQuery) async throws -> UpdateQuery.BindingType {
+        let stringifiedUrl = "\(url)/blazegraph/namespace/kb/sparql"
+        guard let url = URL(string: stringifiedUrl) else {
+            throw GraphServiceAdapterError.invalidUrl(stringifiedUrl)
+        }
+        var urlRequest = URLRequest(url: url)
+
+        urlRequest.httpMethod = "POST"
+
+        urlRequest.setValue("application/x-turtle", forHTTPHeaderField: "content-type")
+
+        urlRequest.httpBody = query.text.data(using: .utf8)!
+
+        let group = DispatchGroup()
+        group.enter(1)
+
+        var decoded: UpdateQuery.BindingType! = nil
+
+        URLSession.shared.dataTask(
+            with: urlRequest, completionHandler: {data, response, error in
+                do {
+                    decoded = try UpdateQuery.BindingType(String(decoding: data!, as: UTF8.self))
+                    // decoded = try JSONDecoder().decode(Sample<QueryType.BindingType>.self, from: data!) 
+                } catch {
+                    print("Unexpected error when decoding blazegraph service response: \(error)")
+                }
+                group.leave()
+            }
+        ).resume()
+
+        group.wait()
+
+        return decoded!
+    }
 }
+

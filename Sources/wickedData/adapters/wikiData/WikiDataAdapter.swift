@@ -27,7 +27,7 @@ public struct WikiDataAdapter: GraphServiceAdapter {
                 decoded = try! JSONDecoder().decode(Sample<QueryType.BindingType>.self, from: data!) 
                 group.leave()
             }
-            ).resume()
+        ).resume()
         group.wait()
 
         return decoded!
