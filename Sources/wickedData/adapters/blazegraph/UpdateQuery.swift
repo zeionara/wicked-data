@@ -7,7 +7,11 @@ public enum UpdateQueryExecutionError: Error {
 public struct UpdateQuery: Query {
     public let text: String
 
-    public struct BindingType: Codable {
+    public init(text: String) {
+        self.text = text
+    }
+
+    public struct BindingType: Codable, CustomStringConvertible {
         private static let xmlRegex = try! NSRegularExpression(
             pattern: #"<\?xml version="1.0"\?><data modified="(?<nModifiedTriples>[0-9]+)" milliseconds="(?<executionTimeInMilliseconds>[0-9]+)"/>"#,
             // pattern: "<?xml version=\"1.0\"?><data modified=\"(?<nModifiedTriples>[0-9]+)\" milliseconds=\"(?<executionTimeInMilliseconds>[0-9]+)\"/>",
@@ -60,5 +64,10 @@ public struct UpdateQuery: Query {
                 throw UpdateQueryExecutionError.cannotDecodeResponse(message: "Cannot extract execution time in milliseconds")
             }
         }
+
+        public var description: String {
+            "Inserted \(nModifiedTriples) in \(executionTimeInMilliseconds) ms"
+        }
     }
 }
+
