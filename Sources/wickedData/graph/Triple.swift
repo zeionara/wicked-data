@@ -33,6 +33,10 @@ public enum TripleType {
 
 public struct Relationship {
     public let name: String
+
+    public init(name: String) {
+        self.name = name
+    }
 }
 
 public struct Triple: CustomStringConvertible{
