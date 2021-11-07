@@ -84,7 +84,10 @@ public extension Sample where BindingType: CountableBindingTypeWithAggregation {
     }
 
     func count(_ relativeThreshold: Double = 0.5) -> Int {
-        assert(results.bindings.count > 0)
+        if results.bindings.count == 0 {
+            return 0
+        }
+
         assert(0.0 <= relativeThreshold && relativeThreshold <= 1.0)
 
         let counts = results.bindings.map{$0.count.value.asInt}.sorted{$0 > $1}
