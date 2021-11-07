@@ -173,9 +173,9 @@ public struct Variable: Codable {
         case datatype
     }
 
-    let type: String
-    let value: String
-    let language: String?
-    let datatype: String?
+    public let type: String
+    public let value: String
+    public let language: String?
+    public let datatype: String?
 }
 
