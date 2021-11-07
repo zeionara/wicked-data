@@ -26,6 +26,7 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
         urlRequest.setValue("application/sparql-results+json", forHTTPHeaderField: "accept")
         urlRequest.setValue("application/x-www-form-urlencoded; charset=UTF-8", forHTTPHeaderField: "content-type")
         if let unwrappedTimeout = timeout {
+            urlRequest.timeoutInterval = Double(unwrappedTimeout) / 1000.0
             urlRequest.setValue(String(describing: unwrappedTimeout), forHTTPHeaderField: "X-BIGDATA-MAX-QUERY-MILLIS")
         }
 
@@ -64,6 +65,7 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
 
         urlRequest.setValue("application/x-turtle", forHTTPHeaderField: "content-type")
         if let unwrappedTimeout = timeout {
+            urlRequest.timeoutInterval = Double(unwrappedTimeout) / 1000.0
             urlRequest.setValue(String(describing: unwrappedTimeout), forHTTPHeaderField: "X-BIGDATA-MAX-QUERY-MILLIS")
         }
 
