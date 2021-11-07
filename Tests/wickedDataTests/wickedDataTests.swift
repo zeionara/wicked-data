@@ -78,14 +78,28 @@ final class wickedDataTests: XCTestCase {
         ren:Q216121 ren:antiparticleOf ren:Q556 .
         ren:Q11905758 ren:antiparticleOf ren:Q2126 .
         """
+        
+        let queryWithAggregation = """
+        select (count(?h) as ?count) (?r as ?relation) where {
+          ?h ?r ?t.
+          ?t ?r ?h.
+          filter(str(?h) > str(?t))
+        }
+        group by ?r
+        """
 
         BlockingTask {
             print("Testing...")
             let sample = try! await adapter.sample(CountingQuery(text: query))
             print("Currently there are \(sample.count) triples in theknowledge base")
 
-            let response = try! await adapter.update(UpdateQuery(text: graph))
-            print("Inserted \(response.nModifiedTriples) in \(response.executionTimeInMilliseconds) ms")
+            // let response = try! await adapter.update(UpdateQuery(text: graph))
+            // print("Inserted \(response.nModifiedTriples) in \(response.executionTimeInMilliseconds) ms")
+
+            let sampleWithAggregation = try! await adapter.sample(CountingQueryWithAggregation<CountableBindingTypeWithOneRelationAggregation>(text: queryWithAggregation))
+            for triple in sampleWithAggregation.triples {
+                print(triple)
+            }
         }
         
         // let adapter = WikiDataAdapter()
