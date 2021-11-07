@@ -78,3 +78,18 @@ public struct CountableBindingTypeWithOneRelationAggregation: CountableBindingTy
     }
 } 
 
+public extension Sample where BindingType: CountableBindingTypeWithAggregation {
+    var count: Int {
+        count()
+    }
+
+    func count(_ relativeThreshold: Double = 0.5) -> Int {
+        assert(results.bindings.count > 0)
+        assert(0.0 <= relativeThreshold && relativeThreshold <= 1.0)
+
+        let counts = results.bindings.map{$0.count.value.asInt}.sorted{$0 > $1}
+        let absoluteThreshold = Double(counts.first!) * relativeThreshold
+
+        return counts.filter{Double($0) > absoluteThreshold}.reduce(0, +)
+    }
+}

@@ -100,6 +100,7 @@ final class wickedDataTests: XCTestCase {
             for triple in sampleWithAggregation.triples {
                 print(triple)
             }
+            print("N found patterns: \(sampleWithAggregation.count)")
         }
         
         // let adapter = WikiDataAdapter()
