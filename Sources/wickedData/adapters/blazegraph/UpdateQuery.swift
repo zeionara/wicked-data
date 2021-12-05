@@ -4,7 +4,7 @@ public enum UpdateQueryExecutionError: Error {
     case cannotDecodeResponse(message: String)
 }
 
-public struct UpdateQuery: Query {
+public struct InsertQuery: Query {
     public let text: String
 
     public init(text: String) {
@@ -66,7 +66,63 @@ public struct UpdateQuery: Query {
         }
 
         public var description: String {
-            "Modified \(nModifiedTriples) in \(executionTimeInMilliseconds) ms"
+            "Inserted \(nModifiedTriples) triples in \(executionTimeInMilliseconds) ms"
+        }
+    }
+}
+
+
+public struct UpdateQuery: Query {
+    public let text: String
+
+    public init(text: String) {
+        self.text = text
+    }
+
+    public struct BindingType: Codable, CustomStringConvertible {
+        private static let xmlRegex = try! NSRegularExpression(
+            pattern: #".*COMMIT:\s+totalElapsed=(?<executionTimeInMilliseconds>[0-9]+).*mutationCount=(?<nModifiedTriples>[0-9]+).*"#,
+            options: []
+        )
+
+        public let nModifiedTriples: Int
+        public let executionTimeInMilliseconds: Int 
+
+        public init(_ xml: String) throws {
+            let xmlRange = NSRange(
+                xml.startIndex..<xml.endIndex,
+                in: xml
+            )   
+
+            let matches = BindingType.xmlRegex.matches(
+                in: xml,
+                options: [],
+                range: xmlRange
+            )    
+
+            guard let match = matches.first else {
+                throw UpdateQueryExecutionError.cannotDecodeResponse(message: "Response does not satisfy the reference string; response = \(xml); reference string = \(BindingType.xmlRegex.pattern)")
+            }
+
+            // Decode nModifiedTriples
+
+            let nModifiedTriplesRangeInMatch = match.range(withName: "nModifiedTriples")
+            if let nModifiedTriplesRangeInString = Range(nModifiedTriplesRangeInMatch, in: xml) {
+                nModifiedTriples = String(xml[nModifiedTriplesRangeInString]).asInt
+            } else {
+                throw UpdateQueryExecutionError.cannotDecodeResponse(message: "Cannot extract number of modified triples")
+            }
+
+            let execitionTimeInMillisecondsRangeInMatch = match.range(withName: "executionTimeInMilliseconds")
+            if let execitionTimeInMillisecondsRangeInString = Range(execitionTimeInMillisecondsRangeInMatch, in: xml) {
+                executionTimeInMilliseconds = String(xml[execitionTimeInMillisecondsRangeInString]).asInt
+            } else {
+                throw UpdateQueryExecutionError.cannotDecodeResponse(message: "Cannot extract execution time in milliseconds")
+            }
+        }
+
+        public var description: String {
+            "Updated \(nModifiedTriples) triples in \(executionTimeInMilliseconds) ms"
         }
     }
 }

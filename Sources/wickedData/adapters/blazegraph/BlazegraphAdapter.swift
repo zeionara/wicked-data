@@ -58,7 +58,7 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
         return decoded!
     }
 
-    public func update(_ query: UpdateQuery, timeout: Int? = nil, prefix: URLPrefix = .bigdata) async throws -> UpdateQuery.BindingType {
+    public func insert(_ query: InsertQuery, timeout: Int? = nil, prefix: URLPrefix = .bigdata) async throws -> InsertQuery.BindingType {
         let stringifiedUrl = "\(url)/\(prefix.rawValue)/namespace/kb/sparql"
         guard let url = URL(string: stringifiedUrl) else {
             throw GraphServiceAdapterError.invalidUrl(stringifiedUrl)
@@ -74,6 +74,46 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
         }
 
         urlRequest.httpBody = query.text.data(using: .utf8)!
+
+        let group = DispatchGroup()
+        group.enter(1)
+
+        var decoded: InsertQuery.BindingType! = nil
+
+        URLSession.shared.dataTask(
+            with: urlRequest, completionHandler: {data, response, error in
+                do {
+                    decoded = try InsertQuery.BindingType(String(decoding: data!, as: UTF8.self))
+                    // decoded = try JSONDecoder().decode(Sample<QueryType.BindingType>.self, from: data!) 
+                } catch {
+                    print("Unexpected error when decoding blazegraph service response: \(error)")
+                }
+                group.leave()
+            }
+        ).resume()
+
+        group.wait()
+
+        return decoded!
+    }
+
+    public func update(_ query: UpdateQuery, timeout: Int? = nil, prefix: URLPrefix = .bigdata) async throws -> UpdateQuery.BindingType {
+        let stringifiedUrl = "\(url)/\(prefix.rawValue)/namespace/kb/sparql"
+        guard let url = URL(string: stringifiedUrl) else {
+            throw GraphServiceAdapterError.invalidUrl(stringifiedUrl)
+        }
+        var urlRequest = URLRequest(url: url)
+
+        urlRequest.httpMethod = "POST"
+
+        urlRequest.setValue("application/x-www-form-urlencoded; charset=UTF-8", forHTTPHeaderField: "content-type")
+        if let unwrappedTimeout = timeout {
+            urlRequest.timeoutInterval = Double(unwrappedTimeout) / 1000.0
+            urlRequest.setValue(String(describing: unwrappedTimeout), forHTTPHeaderField: "X-BIGDATA-MAX-QUERY-MILLIS")
+        }
+
+        // urlRequest.httpBody = query.text.data(using: .utf8)!
+        urlRequest.httpBody = "update=\(query.text.addingPercentEncoding(withAllowedCharacters: .alphanumerics)!)".data(using: .utf8)!
 
         let group = DispatchGroup()
         group.enter(1)
@@ -95,6 +135,16 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
         group.wait()
 
         return decoded!
+    }
+
+    public func clear(timeout: Int? = nil, prefix: URLPrefix = .bigdata) async throws -> UpdateQuery.BindingType {
+        try await update(
+            UpdateQuery(
+                text: "delete {?h ?r ?t} where {?h ?r ?t}"
+            ),
+            timeout: timeout,
+            prefix: prefix
+        )
     }
 }
 
