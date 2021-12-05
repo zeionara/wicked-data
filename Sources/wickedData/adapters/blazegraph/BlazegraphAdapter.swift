@@ -14,8 +14,12 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
         try await sample(query, timeout: nil)
     }
 
-    public func sample<QueryType: Query>(_ query: QueryType, timeout: Int?) async throws -> Sample<QueryType.BindingType> {
-        let stringifiedUrl = "\(url)/blazegraph/namespace/kb/sparql"
+    public enum URLPrefix: String {
+        case blazegraph, bigdata
+    }
+
+    public func sample<QueryType: Query>(_ query: QueryType, timeout: Int?, prefix: URLPrefix = .bigdata) async throws -> Sample<QueryType.BindingType> {
+        let stringifiedUrl = "\(url)/\(prefix.rawValue)/namespace/kb/sparql"
         guard let url = URL(string: stringifiedUrl) else {
             throw GraphServiceAdapterError.invalidUrl(stringifiedUrl)
         }
@@ -54,8 +58,8 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
         return decoded!
     }
 
-    public func update(_ query: UpdateQuery, timeout: Int? = nil) async throws -> UpdateQuery.BindingType {
-        let stringifiedUrl = "\(url)/blazegraph/namespace/kb/sparql"
+    public func update(_ query: UpdateQuery, timeout: Int? = nil, prefix: URLPrefix = .bigdata) async throws -> UpdateQuery.BindingType {
+        let stringifiedUrl = "\(url)/\(prefix.rawValue)/namespace/kb/sparql"
         guard let url = URL(string: stringifiedUrl) else {
             throw GraphServiceAdapterError.invalidUrl(stringifiedUrl)
         }

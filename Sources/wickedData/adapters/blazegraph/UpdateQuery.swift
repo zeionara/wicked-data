@@ -66,7 +66,7 @@ public struct UpdateQuery: Query {
         }
 
         public var description: String {
-            "Inserted \(nModifiedTriples) in \(executionTimeInMilliseconds) ms"
+            "Modified \(nModifiedTriples) in \(executionTimeInMilliseconds) ms"
         }
     }
 }
