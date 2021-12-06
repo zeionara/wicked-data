@@ -1,6 +1,6 @@
 import Foundation
 
-public struct CountingQuery: Query {
+public struct CountingQuery: Query, Sendable {
     public init(text: String) {
         self.text = text
     }
