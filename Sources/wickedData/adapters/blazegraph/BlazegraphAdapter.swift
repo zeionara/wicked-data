@@ -1,6 +1,10 @@
 import Foundation
 import FoundationNetworking
 
+public enum DataDecodingError: Error {
+    case emptyResponse(String)
+}
+
 public struct BlazegraphAdapter: GraphServiceAdapter {
     public let address: String
     public let port: Int
@@ -45,9 +49,14 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
         URLSession.shared.dataTask(
             with: urlRequest, completionHandler: {data, response, error in
                 do {
-                    decoded = try JSONDecoder().decode(Sample<QueryType.BindingType>.self, from: data!) 
+                    if let unwrappedData = data {
+                        decoded = try JSONDecoder().decode(Sample<QueryType.BindingType>.self, from: unwrappedData) 
+                    } else {
+                        throw DataDecodingError.emptyResponse(String(describing: error))
+                    }
                 } catch {
                     print("Unexpected error when decoding blazegraph service response: \(error)")
+                    // throw error
                 }
                 group.leave()
             }
