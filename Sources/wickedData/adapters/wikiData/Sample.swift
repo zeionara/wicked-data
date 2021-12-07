@@ -20,6 +20,10 @@ public struct Sample<BindingType: Binding>: Codable {
         
         return triples
     }
+
+    public var nBindings: Int {
+        return results.bindings.count
+    }
 }
 
 public enum SampleJoinError: Error {
