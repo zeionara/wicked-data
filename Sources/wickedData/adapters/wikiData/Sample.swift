@@ -1,13 +1,13 @@
 import Foundation
 import PcgRandom
 
-public protocol Binding: Codable {
+public protocol Binding: Codable, Sendable {
     var triples: [Triple] { get }
 }
 
 let labelRelationship = Relationship(name: "label")
 
-public struct Sample<BindingType: Binding>: Codable {
+public struct Sample<BindingType: Binding>: Codable, Sendable {
     let head: SampleHead
     let results: SampleBody<BindingType>
 
@@ -188,15 +188,15 @@ public extension Sample {
 
 }
 
-public struct SampleHead: Codable {
+public struct SampleHead: Codable, Sendable {
     let vars: [String]
 }
 
-public struct SampleBody<BindingType: Binding>: Codable {
+public struct SampleBody<BindingType: Binding>: Codable, Sendable {
     let bindings: [BindingType]
 }
 
-public struct Variable: Codable {
+public struct Variable: Codable, Sendable {
     enum CodingKeys: String, CodingKey {
         case language = "xml:lang"
         case type
