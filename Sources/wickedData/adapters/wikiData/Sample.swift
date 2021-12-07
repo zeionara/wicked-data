@@ -22,6 +22,33 @@ public struct Sample<BindingType: Binding>: Codable {
     }
 }
 
+public enum SampleJoinError: Error {
+    case emptyList
+}
+
+public func join<BindingType: Binding>(_ samples: [Sample<BindingType>]) throws -> Sample<BindingType> { // TODO: implement as a part of Collection struct extension (see snippet below)
+    guard let firstSample = samples.first else {
+       throw SampleJoinError.emptyList 
+    }
+
+    for sample in samples.dropFirst() {
+        assert(sample.head.vars == firstSample.head.vars)
+    }
+
+    return Sample<BindingType>(
+        head: firstSample.head,
+        results: SampleBody<BindingType>(
+            bindings: samples.map(\.results.bindings).reduce([], +)
+        )
+    ) 
+}
+
+// public extension Collection where Element == Sample<Binding>  {
+//     var joined: [Sample<Element.BindingType>] {
+// 
+//     }
+// }
+
 public typealias CompressedTriples = (triples: [Triple], id2entity: [String: String], id2relationship: [String: String])
 
 public extension Sample {
