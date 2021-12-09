@@ -3,6 +3,7 @@ import FoundationNetworking
 
 public enum DataDecodingError: Error {
     case emptyResponse(String)
+    case cannotDecodeSample
 }
 
 public struct BlazegraphAdapter: GraphServiceAdapter {
@@ -64,7 +65,11 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
 
         group.wait()
 
-        return decoded!
+        if let decodedUnwrapped = decoded {
+            return decodedUnwrapped
+        }
+
+        throw DataDecodingError.cannotDecodeSample
     }
 
     public func insert(_ query: InsertQuery, timeout: Int? = nil, prefix: URLPrefix = .bigdata) async throws -> InsertQuery.BindingType {
