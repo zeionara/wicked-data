@@ -47,6 +47,8 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
         group.enter(1)
 
         var decoded: Sample<QueryType.BindingType>? = nil
+        var caughtException: Bool = false
+
         URLSession.shared.dataTask(
             with: urlRequest, completionHandler: {data, response, error in
                 do {
@@ -57,6 +59,11 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
                     }
                 } catch {
                     print("Unexpected error when decoding blazegraph service response: \(error)")
+                    print("Response: ")
+                    print(String(describing: response))
+                    print("Response body: ")
+                    print(String(decoding: data!, as: UTF8.self))
+                    caughtException = true
                     // throw error
                 }
                 group.leave()
@@ -65,7 +72,7 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
 
         group.wait()
 
-        if let decodedUnwrapped = decoded {
+        if !caughtException, let decodedUnwrapped = decoded {
             return decodedUnwrapped
         }
 
