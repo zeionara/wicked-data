@@ -1,6 +1,8 @@
 import Foundation
 import FoundationNetworking
 
+public let NSEC_PER_SEC: Int = 1_000_000_000
+
 public enum DataDecodingError: Error {
     case emptyResponse(String)
     case cannotDecodeSample
@@ -23,7 +25,7 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
         case blazegraph, bigdata
     }
 
-    public func sample<QueryType: Query>(_ query: QueryType, timeout: Int?, prefix: URLPrefix = .bigdata) async throws -> Sample<QueryType.BindingType> {
+    public func sample<QueryType: Query>(_ query: QueryType, timeout: Int?, prefix: URLPrefix = .bigdata, maxNWastedAttempts: Int = 0, delay: Double = 1) async throws -> Sample<QueryType.BindingType> {
         let stringifiedUrl = "\(url)/\(prefix.rawValue)/namespace/kb/sparql"
         guard let url = URL(string: stringifiedUrl) else {
             throw GraphServiceAdapterError.invalidUrl(stringifiedUrl)
@@ -44,33 +46,60 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
         // print("query=\(query.text.addingPercentEncoding(withAllowedCharacters: .alphanumerics)!)")
 
         let group = DispatchGroup()
-        group.enter(1)
 
         var decoded: Sample<QueryType.BindingType>? = nil
         var caughtException: Bool = false
+        var nWastedAttempts: Int = 0
+        var isSuccessful: Bool = false
+        var currentDelay = delay
 
-        URLSession.shared.dataTask(
-            with: urlRequest, completionHandler: {data, response, error in
-                do {
-                    if let unwrappedData = data {
-                        decoded = try JSONDecoder().decode(Sample<QueryType.BindingType>.self, from: unwrappedData) 
-                    } else {
-                        throw DataDecodingError.emptyResponse(String(describing: error))
+        // print("Initial delay = \(currentDelay)")
+
+        while true {
+            group.enter(1)
+
+            URLSession.shared.dataTask(
+                with: urlRequest, completionHandler: {data, response, error in
+                    do {
+                        if let unwrappedData = data {
+                            decoded = try JSONDecoder().decode(Sample<QueryType.BindingType>.self, from: unwrappedData) 
+                        } else {
+                            throw DataDecodingError.emptyResponse(String(describing: error))
+                        }
+                        isSuccessful = true
+                        if caughtException {
+                            caughtException = false
+                        }
+                    } catch {
+                        print("Foo Unexpected error when decoding blazegraph service response: \(error)")
+                        print("Response: ")
+                        print(String(describing: response))
+                        if let unwrappedData = data {
+                            print("Response body: ")
+                            print(String(decoding: unwrappedData, as: UTF8.self))
+                        } else {
+                            print("No response body")
+                        }
+                        caughtException = true
+                        // throw error
+                        nWastedAttempts += 1
                     }
-                } catch {
-                    print("Unexpected error when decoding blazegraph service response: \(error)")
-                    print("Response: ")
-                    print(String(describing: response))
-                    print("Response body: ")
-                    print(String(decoding: data!, as: UTF8.self))
-                    caughtException = true
-                    // throw error
-                }
-                group.leave()
-            }
-        ).resume()
 
-        group.wait()
+                    group.leave()
+                }
+            ).resume()
+
+            group.wait()
+
+            print("Wasted attempts : \(nWastedAttempts) / \(maxNWastedAttempts)")
+            if (isSuccessful || !isSuccessful && nWastedAttempts > maxNWastedAttempts) {
+                break
+            } else if (!isSuccessful && nWastedAttempts <= maxNWastedAttempts) {
+                print("Trying again after \(currentDelay) seconds")
+                await Task.sleep(UInt64(currentDelay * Double(NSEC_PER_SEC)))
+                currentDelay *= 2
+            }
+        }
 
         if !caughtException, let decodedUnwrapped = decoded {
             return decodedUnwrapped
