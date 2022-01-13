@@ -1,7 +1,34 @@
 import Foundation
 import FoundationNetworking
+import Logging
 
 public let NSEC_PER_SEC: Int = 1_000_000_000
+
+fileprivate extension Optional where Wrapped == Logger {
+    func error(_ message: String) {
+        if let logger = self {
+            logger.error(Logger.Message(stringLiteral: message))
+        } else {
+            print(message)
+        }
+    }
+
+    func info(_ message: String) {
+        if let logger = self {
+            logger.info(Logger.Message(stringLiteral: message))
+        } else {
+            print(message)
+        }
+    }
+
+    func trace(_ message: String) {
+        if let logger = self {
+            logger.trace(Logger.Message(stringLiteral: message))
+        } else {
+            print(message)
+        }
+    }
+}
 
 public enum DataDecodingError: Error {
     case emptyResponse(String)
@@ -25,7 +52,7 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
         case blazegraph, bigdata
     }
 
-    public func sample<QueryType: Query>(_ query: QueryType, timeout: Int?, prefix: URLPrefix = .bigdata, maxNWastedAttempts: Int = 0, delay: Double = 1) async throws -> Sample<QueryType.BindingType> {
+    public func sample<QueryType: Query>(_ query: QueryType, timeout: Int?, prefix: URLPrefix = .bigdata, maxNWastedAttempts: Int = 0, delay: Double = 1, logger: Logger? = nil) async throws -> Sample<QueryType.BindingType> {
         let stringifiedUrl = "\(url)/\(prefix.rawValue)/namespace/kb/sparql"
         guard let url = URL(string: stringifiedUrl) else {
             throw GraphServiceAdapterError.invalidUrl(stringifiedUrl)
@@ -62,7 +89,7 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
                 with: urlRequest, completionHandler: {data, response, error in
                     do {
                         if let unwrappedData = data {
-                            decoded = try JSONDecoder().decode(Sample<QueryType.BindingType>.self, from: unwrappedData) 
+                            decoded = try JSONDecoder().decode(Sample<QueryType.BindingType>.self, from: unwrappedData)
                         } else {
                             throw DataDecodingError.emptyResponse(String(describing: error))
                         }
@@ -71,14 +98,14 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
                             caughtException = false
                         }
                     } catch {
-                        print("Foo Unexpected error when decoding blazegraph service response: \(error)")
-                        print("Response: ")
-                        print(String(describing: response))
+                        logger.trace("Foo Unexpected error when decoding blazegraph service response: \(error)")
+                        logger.trace("Response: ")
+                        logger.trace(String(describing: response))
                         if let unwrappedData = data {
-                            print("Response body: ")
-                            print(String(decoding: unwrappedData, as: UTF8.self))
+                            logger.trace("Response body: ")
+                            logger.trace(String(decoding: unwrappedData, as: UTF8.self))
                         } else {
-                            print("No response body")
+                            logger.trace("No response body")
                         }
                         caughtException = true
                         // throw error
@@ -91,11 +118,14 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
 
             group.wait()
 
-            print("Wasted attempts : \(nWastedAttempts) / \(maxNWastedAttempts)")
+            if (nWastedAttempts > 0) {
+                logger.trace("Wasted attempts : \(nWastedAttempts) / \(maxNWastedAttempts)")
+            }
+
             if (isSuccessful || !isSuccessful && nWastedAttempts > maxNWastedAttempts) {
                 break
             } else if (!isSuccessful && nWastedAttempts <= maxNWastedAttempts) {
-                print("Trying again after \(currentDelay) seconds")
+                logger.trace("Trying again after \(currentDelay) seconds")
                 await Task.sleep(UInt64(currentDelay * Double(NSEC_PER_SEC)))
                 currentDelay *= 2
             }
@@ -134,7 +164,7 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
             with: urlRequest, completionHandler: {data, response, error in
                 do {
                     decoded = try InsertQuery.BindingType(String(decoding: data!, as: UTF8.self))
-                    // decoded = try JSONDecoder().decode(Sample<QueryType.BindingType>.self, from: data!) 
+                    // decoded = try JSONDecoder().decode(Sample<QueryType.BindingType>.self, from: data!)
                 } catch {
                     print("Unexpected error when decoding blazegraph service response: \(error)")
                 }
@@ -174,7 +204,7 @@ public struct BlazegraphAdapter: GraphServiceAdapter {
             with: urlRequest, completionHandler: {data, response, error in
                 do {
                     decoded = try UpdateQuery.BindingType(String(decoding: data!, as: UTF8.self))
-                    // decoded = try JSONDecoder().decode(Sample<QueryType.BindingType>.self, from: data!) 
+                    // decoded = try JSONDecoder().decode(Sample<QueryType.BindingType>.self, from: data!)
                 } catch {
                     print("Unexpected error when decoding blazegraph service response: \(error)")
                 }
