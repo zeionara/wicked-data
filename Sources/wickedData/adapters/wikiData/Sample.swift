@@ -1,5 +1,6 @@
 import Foundation
 import PcgRandom
+import Logging
 
 public protocol Binding: Codable, Sendable {
     var triples: [Triple] { get }
@@ -30,7 +31,13 @@ public enum SampleJoinError: Error {
     case emptyList
 }
 
-public func join<BindingType: Binding>(_ samples: [Sample<BindingType>]) throws -> Sample<BindingType> { // TODO: implement as a part of Collection struct extension (see snippet below)
+public extension DispatchTime {
+    var elapsedTime: Double {
+        Double(DispatchTime.now().uptimeNanoseconds - uptimeNanoseconds) / 1_000_000_000
+    }
+}
+
+public func join<BindingType: Binding>(_ samples: [Sample<BindingType>], logger: Logger? = nil) throws -> Sample<BindingType> { // TODO: implement as a part of Collection struct extension (see snippet below)
     guard let firstSample = samples.first else {
        throw SampleJoinError.emptyList 
     }
@@ -39,12 +46,20 @@ public func join<BindingType: Binding>(_ samples: [Sample<BindingType>]) throws 
         assert(sample.head.vars == firstSample.head.vars)
     }
 
-    return Sample<BindingType>(
+    logger.trace("Joining \(samples.count) samples...")
+
+    let beforeMakingResult = DispatchTime.now()
+
+    let result = Sample<BindingType>(
         head: firstSample.head,
         results: SampleBody<BindingType>(
             bindings: samples.map(\.results.bindings).reduce([], +)
         )
     ) 
+
+    logger.trace("Joined \(samples.count) samples in \(String(format: "%.4f", beforeMakingResult.elapsedTime)) seconds")
+
+    return result
 }
 
 // public extension Collection where Element == Sample<Binding>  {

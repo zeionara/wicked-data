@@ -4,7 +4,7 @@ import Logging
 
 public let NSEC_PER_SEC: Int = 1_000_000_000
 
-fileprivate extension Optional where Wrapped == Logger {
+internal extension Optional where Wrapped == Logger {
     func error(_ message: String) {
         if let logger = self {
             logger.error(Logger.Message(stringLiteral: message))
