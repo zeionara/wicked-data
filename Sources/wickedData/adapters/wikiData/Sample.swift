@@ -50,11 +50,22 @@ public func join<BindingType: Binding>(_ samples: [Sample<BindingType>], logger:
 
     let beforeMakingResult = DispatchTime.now()
 
+    var bindings = [BindingType]()
+
+    for sample in samples {
+        for binding in sample.results.bindings {
+            bindings.append(binding)
+        }
+    }
+
     let result = Sample<BindingType>(
         head: firstSample.head,
         results: SampleBody<BindingType>(
-            bindings: samples.map(\.results.bindings).reduce([], +)
+            bindings: bindings
         )
+        // results: SampleBody<BindingType>(
+        //     bindings: samples.map(\.results.bindings).reduce([], +)
+        // )
     ) 
 
     logger.trace("Joined \(samples.count) samples in \(String(format: "%.4f", beforeMakingResult.elapsedTime)) seconds")
